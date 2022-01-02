@@ -3,7 +3,7 @@ PROJECT_NAME := $(shell basename "$(PWD)")
 TAG ?= test
 
 .PHONY: build
-build: ## Build the application and produce a binary called `test`
+build: ## Build the application and produce a binary
 	go build .
 
 .PHONY: test

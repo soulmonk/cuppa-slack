@@ -22,6 +22,8 @@ func SlackSocketMode() {
 	go func() {
 		for evt := range client.Events {
 			switch evt.Type {
+			case socketmode.EventTypeHello:
+				log.Info().Msg("Connected to Slack received hello")
 			case socketmode.EventTypeConnecting:
 				log.Debug().Msg("Connecting to Slack with Socket Mode...")
 			case socketmode.EventTypeConnectionError:
@@ -32,7 +34,6 @@ func SlackSocketMode() {
 				eventsAPIEvent, ok := evt.Data.(slackevents.EventsAPIEvent)
 				if !ok {
 					log.Debug().Interface("evt", evt).Msg("Ignored")
-
 					continue
 				}
 
@@ -49,13 +50,13 @@ func SlackSocketMode() {
 						if ev.Text == "Hi" {
 							_, _, err := api.PostMessage(ev.Channel, slack.MsgOptionText("Yes, hello.", false))
 							if err != nil {
-								log.Debug().Err(err).Msg("failed posting message")
+								log.Error().Err(err).Interface("type", "MessageEvent").Msg("failed posting message")
 							}
 						}
 					case *slackevents.AppMentionEvent:
 						_, _, err := api.PostMessage(ev.Channel, slack.MsgOptionText("Yes, hello.", false))
 						if err != nil {
-							log.Debug().Err(err).Msg("failed posting message")
+							log.Error().Err(err).Interface("type", "AppMentionEvent").Msg("failed posting message")
 						}
 					}
 				default:
@@ -95,7 +96,15 @@ func SlackSocketMode() {
 				log.Debug().Interface("cmd", cmd).Msg("Slash command received")
 
 				if cmd.Command == "/wol" {
-					cmds.WOL.Run()
+					err := cmds.WOL.Run()
+					message := "Done"
+					if err != nil {
+						message = "Error"
+					}
+					_, err = api.PostEphemeral(cmd.ChannelID, cmd.UserID, slack.MsgOptionText(message, false))
+					if err != nil {
+						log.Error().Err(err).Interface("type", "EventTypeSlashCommand").Msg("failed posting ephemeral")
+					}
 				}
 				//var payload interface{}
 				client.Ack(*evt.Request)
