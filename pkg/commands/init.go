@@ -1,7 +1,7 @@
 package commands
 
 type Command interface {
-	Run()
+	Run() error
 }
 
 type Commands struct {
@@ -9,6 +9,9 @@ type Commands struct {
 }
 
 func Init() Commands {
+	// todo
+	// to map
+	// {'/commandName': commandInstance()}
 	return Commands{
 		newWol(),
 	}
