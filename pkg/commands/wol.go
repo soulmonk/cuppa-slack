@@ -12,7 +12,7 @@ type wol struct {
 	macAddress string
 }
 
-func (w wol) Run() error {
+func (w wol) run() error {
 	log.Debug().
 		Str("ipAddress", w.ipAddress).
 		Str("macAddress", w.macAddress).
@@ -26,7 +26,7 @@ func (w wol) Run() error {
 		log.Debug().Msg("IT'S ALIVEEE")
 	}
 
-	//cmd := exec.Command("wakeonlan", "-i", w.ipAddress, w.macAddress)
+	//cmd := exec.Command("wakeonlan", "-i", w.ipAddr, w.macAddress)
 	// for now use external app
 	cmd := exec.Command("wakeonlan", w.macAddress)
 	stdout, err := cmd.Output()
