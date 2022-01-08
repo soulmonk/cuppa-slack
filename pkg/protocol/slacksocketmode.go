@@ -58,8 +58,11 @@ func SlackSocketMode() {
 						if err != nil {
 							log.Error().Err(err).Interface("type", "AppMentionEvent").Msg("failed posting message")
 						}
+					default:
+						log.Warn().Interface("MessageEvent", ev).Msg("unsupported innerEvent")
 					}
 				default:
+					log.Warn().Msg("unsupported Events API event received")
 					client.Debugf("unsupported Events API event received")
 				}
 			case socketmode.EventTypeInteractive:
@@ -76,7 +79,16 @@ func SlackSocketMode() {
 				case slack.InteractionTypeBlockActions:
 					// See https://api.slack.com/apis/connections/socket-implement#button
 
-					log.Debug().Msg("button clicked!")
+					blockAction := callback.ActionCallback.BlockActions[0]
+					if blockAction.Value == "commands" {
+						message := cmds.Run(blockAction.ActionID)
+
+						_, err := api.PostEphemeral(callback.User.ID, callback.User.ID, slack.MsgOptionText(message, false))
+						if err != nil {
+							log.Error().Err(err).Interface("type", "EventTypeSlashCommand").Msg("failed posting ephemeral")
+						}
+					}
+
 				case slack.InteractionTypeShortcut:
 				case slack.InteractionTypeViewSubmission:
 					// See https://api.slack.com/apis/connections/socket-implement#modal
@@ -95,17 +107,12 @@ func SlackSocketMode() {
 
 				log.Debug().Interface("cmd", cmd).Msg("Slash command received")
 
-				if cmd.Command == "/wol" {
-					err := cmds.WOL.Run()
-					message := "Done"
-					if err != nil {
-						message = "Error"
-					}
-					_, err = api.PostEphemeral(cmd.ChannelID, cmd.UserID, slack.MsgOptionText(message, false))
-					if err != nil {
-						log.Error().Err(err).Interface("type", "EventTypeSlashCommand").Msg("failed posting ephemeral")
-					}
+				message := cmds.Run(cmd.Command[1:])
+				_, err = api.PostEphemeral(cmd.ChannelID, cmd.UserID, slack.MsgOptionText(message, false))
+				if err != nil {
+					log.Error().Err(err).Interface("type", "EventTypeSlashCommand").Msg("failed posting ephemeral")
 				}
+
 				//var payload interface{}
 				client.Ack(*evt.Request)
 			default:
